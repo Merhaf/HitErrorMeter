@@ -1,8 +1,8 @@
 Usecase: ingame, obs-overlay
 Name: HitErrorMeter
-Version: 1.1-dev
+Version: 1.1
 Author: KapiWilq
 CompatibleWith: tosu
-Resolution: 720x100
+Resolution: 720x200
 authorLinks: https://github.com/KapiWilq
 Notes: Supports all rulesets! | Very customizable! | The overlay resolution/size is for the default settings (both the overlay and the in-game score meter) in the osu!mania ruleset with EZDT at OD0.
