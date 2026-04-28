@@ -84,6 +84,7 @@ class HitErrorMeter {
         document.querySelector('#unstableRate').style.color = settings.unstableRateColor;
 
         document.querySelector('.movingAverageArrow').style.opacity = Number(settings.showMovingAverageArrow);
+        /*
         if (settings.showMovingAverageArrow) {
             if (settings.movingAverageArrowSize >= 0) {
                 document.querySelector('.movingAverageArrow').style.height = `${settings.movingAverageArrowSize * this.hitErrorMeterScale / 16}rem`;
@@ -95,6 +96,7 @@ class HitErrorMeter {
         };
         document.querySelector('.movingAverageArrow').style.marginBottom = `${4 * this.hitErrorMeterScale / 16}rem`;
         document.querySelector('.movingAverageArrow').style.fill = settings.movingAverageArrowColor;
+        */
         // Doing it this way allows me to put a safeguard against negative values while being able to change the transition timing function.
         if (settings.movingAverageArrowAnimationDuration >= 0)
             this.movingAverageArrowAnimationDuration = Math.min(settings.movingAverageArrowAnimationDuration, 3000);
