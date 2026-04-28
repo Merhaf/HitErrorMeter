@@ -41,7 +41,7 @@
           "Show only the value",
           "Show both the prefix and the value" 
       ],
-      "value": "Show both the prefix and the value"
+      "value": "Show nothing"
   },
   {
       "uniqueID": "unstableRateSize",
@@ -77,11 +77,11 @@
   },
   {
       "uniqueID": "showMovingAverageArrow",
-      "type": "checkbox",
+      "type": "number",
       "title": "Show the moving average arrow",
       "description": "",
       "options": [],
-      "value": true
+      "value": 0.9
   },
   {
       "uniqueID": "movingAverageArrowSize",
@@ -97,7 +97,7 @@
       "title": "Moving average arrow color",
       "description": "",
       "options": [],
-      "value": "#ffffff"
+      "value": "#99ddff"
   },
   {
       "uniqueID": "movingAverageArrowAnimationDuration",
@@ -129,7 +129,7 @@
       "title": "Main tick height (in pixels)",
       "description": "Must be a number bigger or equal `8`.",
       "options": [],
-      "value": 24
+      "value": 8
   },
   {
       "uniqueID": "mainTickColor",
@@ -137,7 +137,7 @@
       "title": "Main tick color",
       "description": "",
       "options": [],
-      "value": "#ffffff"
+      "value": "#99ddff"
   },
   {
       "uniqueID": "hitWindowsSettings",
@@ -153,7 +153,7 @@
       "title": "Show hit windows",
       "description": "The equivalent of this being toggled off can be seen in some VSRGs out there.",
       "options": [],
-      "value": true
+      "value": false
   },
   {
       "uniqueID": "showHitErrorMeterInCatch",
@@ -253,7 +253,7 @@
       "title": "Hit error ticks height (in pixels)",
       "description": "The height of hit error ticks when their animation is complete. Must be a number bigger or equal `8`.",
       "options": [],
-      "value": 36
+      "value": 20
   },
   {
       "uniqueID": "tickWidth",
@@ -261,7 +261,7 @@
       "title": "Hit error ticks width (in pixels)",
       "description": "Must be a number between `1` and `8`.",
       "options": [],
-      "value": 4
+      "value": 2
   },
   {
       "uniqueID": "tickAppearanceStyle",
@@ -309,7 +309,7 @@
       "title": "Hit error ticks disappearance animation duration (in milliseconds)",
       "description": "The time it takes for the hit error tick to fully disappear. Must be a positive number smaller or equal `10000` (10 seconds).",
       "options": [],
-      "value": 3000
+      "value": 2000
   },
   {
       "uniqueID": "tickDisappearanceAnimation",
@@ -333,6 +333,6 @@
       "title": "Hide the in-game score meter (osu!(stable) only)",
       "description": "Useful for people who want to both see the in-game score meter and use the overlay somewhere else. Note that this setting currently does **NOT** work in osu!taiko due to a currently unknown way osu!(stable) offsets backgrounds. **!!! IMPORTANT !!!** If this is enabled, the overlay MUST BE at the exact bottom center of the screen.",
       "options": [],
-      "value": true
+      "value": false
   }
 ]
