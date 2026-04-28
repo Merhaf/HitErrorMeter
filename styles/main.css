@@ -24,20 +24,20 @@ body {
 }
 
 .main {
-    transform-origin: bottom;
+    transform-origin: center;
     display: flex;
-    flex-direction: column;
+	flex-direction: column;
     align-items: center;
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 /* ---------- UNSTABLE RATE ---------- */
 
 #unstableRate {
-    transform-origin: bottom;
+    transform-origin: center;
     opacity: 0;
     width: fit-content;
     margin-bottom: 0.5rem;
@@ -50,14 +50,15 @@ body {
 /* ---------- MOVING AVERAGE ARROW ---------- */
 
 .movingAverageArrow {
-    transform-origin: bottom;
+    transform-origin: center;
     filter: drop-shadow(0 0 0.125rem black);
     fill: white;
     position: relative;
-    height: 0.5rem;
-    margin-bottom: 0.25rem;
+    height: 2rem;
+    margin-bottom: -1.65rem;
     /* easeOutQuint */
     transition: cubic-bezier(0.22, 1, 0.36, 1) 800ms;
+	z-index: 10;
 }
 
 /* ---------- HIT ERROR METER ---------- */
@@ -77,8 +78,65 @@ body {
 .segments {
     display: inline-flex;
     align-items: center;
-    height: 2.25rem;
+    height: 2rem;
+	margin-bottom: 3rem;
     transition: cubic-bezier(0, 1, 0.33, 1) 500ms;
+	-webkit-mask-image: radial-gradient(
+    circle at center,
+    rgba(0, 0, 0, 0.74) 0%,
+    rgba(0, 0, 0, 0.71) 4.17%,
+    rgba(0, 0, 0, 0.66) 8.33%,
+    rgba(0, 0, 0, 0.62) 12.5%,
+    rgba(0, 0, 0, 0.59) 16.67%,
+    rgba(0, 0, 0, 0.54) 20.83%,
+    rgba(0, 0, 0, 0.50) 25%,
+    rgba(0, 0, 0, 0.46) 29.17%,
+    rgba(0, 0, 0, 0.42) 33.33%,
+    rgba(0, 0, 0, 0.38) 37.5%,
+    rgba(0, 0, 0, 0.33) 41.67%,
+    rgba(0, 0, 0, 0.30) 45.83%,
+    rgba(0, 0, 0, 0.24) 50%,
+    rgba(0, 0, 0, 0.22) 54.17%,
+    rgba(0, 0, 0, 0.16) 58.33%,
+    rgba(0, 0, 0, 0.13) 62.5%,
+    rgba(0, 0, 0, 0.11) 66.67%,
+    rgba(0, 0, 0, 0.08) 70.83%,
+    rgba(0, 0, 0, 0.04) 75%,
+    rgba(0, 0, 0, 0.01) 79.17%,
+    rgba(0, 0, 0, 0.00) 83.33%,
+    rgba(0, 0, 0, 0.00) 87.5%,
+    rgba(0, 0, 0, 0.00) 91.67%,
+    rgba(0, 0, 0, 0.00) 95.83%,
+    rgba(0, 0, 0, 0.00) 100%
+    );
+    mask-image: radial-gradient(
+    circle at center,
+    rgba(0, 0, 0, 0.74) 0%,
+    rgba(0, 0, 0, 0.71) 4.17%,
+    rgba(0, 0, 0, 0.66) 8.33%,
+    rgba(0, 0, 0, 0.62) 12.5%,
+    rgba(0, 0, 0, 0.59) 16.67%,
+    rgba(0, 0, 0, 0.54) 20.83%,
+    rgba(0, 0, 0, 0.50) 25%,
+    rgba(0, 0, 0, 0.46) 29.17%,
+    rgba(0, 0, 0, 0.42) 33.33%,
+    rgba(0, 0, 0, 0.38) 37.5%,
+    rgba(0, 0, 0, 0.33) 41.67%,
+    rgba(0, 0, 0, 0.30) 45.83%,
+    rgba(0, 0, 0, 0.24) 50%,
+    rgba(0, 0, 0, 0.22) 54.17%,
+    rgba(0, 0, 0, 0.16) 58.33%,
+    rgba(0, 0, 0, 0.13) 62.5%,
+    rgba(0, 0, 0, 0.11) 66.67%,
+    rgba(0, 0, 0, 0.08) 70.83%,
+    rgba(0, 0, 0, 0.04) 75%,
+    rgba(0, 0, 0, 0.01) 79.17%,
+    rgba(0, 0, 0, 0.00) 83.33%,
+    rgba(0, 0, 0, 0.00) 87.5%,
+    rgba(0, 0, 0, 0.00) 91.67%,
+    rgba(0, 0, 0, 0.00) 95.83%,
+    rgba(0, 0, 0, 0.00) 100%
+    );
 }
 
 .windowsContainer {
