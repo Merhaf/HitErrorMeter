@@ -1,59 +1,266 @@
-<!DOCTYPE html>
-<html lang="en">
+import WebSocketManager from './js/socket.js';
+import HitErrorMeter from './js/hitErrorMeter.js';
+const socket = new WebSocketManager(location.host);
 
-<head>
-    <title>HitErrorMeter by KapiWilq</title>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+let cache = {
+    showHitErrorMeterInCatch: false,
+    maniaHit50LateStyle: 'Show nothing',
+    scaleHitErrorMeterWithResolution: true,
+    hideInGameScoreMeter: false,
+    unstableRateStyle: '',
+    client: '',
+    previousState: '',
+    currentState: '',
+    isConvert: false,
+    rulesetName: '',
+    overallDiff: 0,
+    circleSize: 0,
+    mods: 'asdf',
+    rate: -1,
+    isFullscreen: true,
+    gameWindowedHeight: -1,
+    gameFullscreenHeight: -1,
+    foldersBeatmap: '',
+    filesBackground: '',
+    backgroundDim: -1,
+    scoreMeterSize: 0,
+    hitErrors: [14, 34, 69, 420, 1337, 2137],
+    unstableRate: -1,
+    hitErrorsPreviousAmount: -1,
+    relativeMovingAverageArrowPosition: 0
+};
 
-    <link rel="stylesheet" href="styles/main.css" />
-</head>
+let unstableRateCountUp = new CountUp('unstableRate', 0, 0, 2, .5, { useEasing: true, useGrouping: true, separator: ' ', decimal: '.', prefix: 'UR: ' });
 
-<body>
-    <div class="main">
-        <div id="unstableRate">UR: 0.00</div>
-        <div class="hitErrorMeterContainer">
-            <!-- This MUST be here, otherwise you wouldn't be able to change its color. -->
-            <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" viewBox="0 0 16 70" class="movingAverageArrow">
-                <rect width="16" height="70" rx="8" ry="8"/>
-            </svg>            
-            <div class="segments">
-                <div class="earlyWindows windowsContainer">
-                    <div id="hit320Early" class="hit320 hitWindow"></div>
-                    <div id="hit300Early" class="hit300 hitWindow"></div>
-                    <div id="hit200Early" class="hit200 hitWindow"></div>
-                    <div id="hit100Early" class="hit100 hitWindow"></div>
-                    <div id="hit50Early" class="hit50 hitWindow"></div>
-                </div>
-                <div class="mainTick"></div>
-                <div class="lateWindows windowsContainer">
-                    <div id="hit320Late" class="hit320 hitWindow"></div>
-                    <div id="hit300Late" class="hit300 hitWindow"></div>
-                    <div id="hit200Late" class="hit200 hitWindow"></div>
-                    <div id="hit100Late" class="hit100 hitWindow"></div>
-                    <div id="hit50Late" class="hit50 hitWindow"></div>
-                </div>
-            </div>
-        </div>
-        <div class="inGameScoreMeterHider">
-            <img src="" id="background">
-        </div>
-    </div>
+const hitErrorMeterManager = new HitErrorMeter();
 
-    <script>
-        // In-game debugging; taken from cyperdark's key overlay with variables renamed.
-        // See https://github.com/tosuapp/counters/blob/master/counters/KeyOverlay%20by%20cyperdark/index.html#L86-L110
-        window.onerror = function (error, file, lineNumber, columnNumber) {
-            let errorElement = document.createElement('div');
 
-            errorElement.innerText = `${error} in ${file}, line ${lineNumber} col ${columnNumber}`;
-            document.querySelector('.main').appendChild(errorElement);
+
+/**
+ * A helper method to prepare the Unstable Rate display.
+ * @param {'Show nothing' | 'Show only the value' | 'Show both the prefix and the value'} unstableRateStyle - The display style of the Unstable Rate display.
+ */
+function prepareUnstableRateDisplay(unstableRateStyle) {
+    cache.unstableRateStyle = unstableRateStyle;
+
+    // You cannot edit existing CountUps' properties, therefore redeclare it.
+    if (cache.unstableRateStyle === 'Show only the value')
+        unstableRateCountUp = new CountUp('unstableRate', cache.unstableRate, 0, 2, .5, { useEasing: true, useGrouping: true, separator: ' ', decimal: '.' });
+    else if (cache.unstableRateStyle === 'Show both the prefix and the value')
+        unstableRateCountUp = new CountUp('unstableRate', cache.unstableRate, 0, 2, .5, { useEasing: true, useGrouping: true, separator: ' ', decimal: '.', prefix: 'UR: ' });
+
+    // Show either during gameplay or when going to the results screen from gameplay (and when user wants to see it).
+    document.querySelector('#unstableRate').style.opacity = Number((cache.currentState === 'play' || (cache.currentState === 'resultScreen' && cache.previousState === 'play')) && cache.unstableRateStyle !== 'Show nothing');
+};
+
+/**
+ * A helper function to determine whether the hit error meter should be visible.
+ * @returns {boolean} Whether the hit error meter should be visible.
+ */
+function shouldHitErrorMeterBeVisible() {
+    return cache.currentState === 'play' && (cache.showHitErrorMeterInCatch || cache.rulesetName !== 'fruits');
+};
+
+/**
+ * A helper method to handle osu!mania's hit windows edge case (namely it not using 50's late hit window)
+ */
+function shouldLateHitErrorBeConsideredInMania(hitError) {
+    // Not taking an absolute value since early hits are negative, so let's take an advantage of this.
+    return cache.rulesetName !== 'mania' || cache.maniaHit50LateStyle !== 'Show nothing' || hitError <= hitErrorMeterManager.hitWindows.hit50;
+}
+
+
+socket.sendCommand('getSettings', encodeURI(window.COUNTER_PATH));
+
+socket.commands(({ command, message }) => {
+    try {
+        if (command === 'getSettings') {
+            cache.showHitErrorMeterInCatch = message.showHitErrorMeterInCatch;
+            cache.maniaHit50LateStyle = message.maniaHit50LateStyle;
+            cache.scaleHitErrorMeterWithResolution = message.scaleHitErrorMeterWithResolution;
+            cache.hideInGameScoreMeter = message.hideInGameScoreMeter;
+
+            // Here is a thing - osu!(lazer) already has way more flexibility when it comes to resizing (and moving, and scaling, and everything in between).
+            // It wouldn't make sense to scale this overlay in osu!lazer since not only you can have multiple hit error meters, you can scale them however you want.
+            // Therefore, limit this to osu!(stable) only.
+            if (cache.client === 'stable' && cache.scaleHitErrorMeterWithResolution)
+                document.querySelector('.main').style.transform = cache.isFullscreen
+                    ? `translate(-50%, -50%) scale(${cache.gameFullscreenHeight / 1080})`
+                    : `translate(-50%, -50%) scale(${cache.gameWindowedHeight / 1080})`;
+            else
+                document.querySelector('.main').style.transform = `translate(-50%, -50%) scale(1)`;
+
+            hitErrorMeterManager.applyUserSettings(message);
+            document.querySelector('.hitErrorMeterContainer').style.opacity = Number(shouldHitErrorMeterBeVisible());
+            // osu!taiko applies a vertical offset to the map background only in some maps
+            // (can't determine why (and how) yet, therefore let's disable the in-game score meter hider in osu!taiko for now).
+            // See https://github.com/ppy/osu/issues/14238#issuecomment-2167691307
+            document.querySelector('.inGameScoreMeterHider').style.opacity = Number(cache.currentState === 'play' && cache.hideInGameScoreMeter && cache.rulesetName !== 'taiko');
+
+            prepareUnstableRateDisplay(message.unstableRateStyle);
         };
-    </script>
-    <script src="js/countUp.js"></script>
+    } catch (error) {
+        console.error(error);
+    };
+});
 
-    <script type="module" src="index.js"></script>
-</body>
+socket.api_v2(({ client, state, settings, beatmap, play, folders, files }) => {
+    try {
+        //console.log('client:', client);
+        //console.log('state:', state);
+        //console.log('settings:', settings);
+        //console.log('beatmap:', beatmap);
+        //console.log('play:', play);
+        //console.log('folders:', folders);
+        //console.log('files:', files);
+        if (cache.client !== client)
+            cache.client = client;
 
-</html>
+        // Normally, all of these checks would be separate `if` statements (especially the state check),
+        // however this approach avoids code duplication due to the way the overlay is supposed to work.
+        if (cache.currentState !== state.name
+            || cache.rulesetName !== settings.mode.name
+            || cache.isConvert !== beatmap.isConvert
+            || cache.overallDiff !== beatmap.stats.od.original
+            || cache.circleSize !== beatmap.stats.cs.original
+            || cache.mods !== play.mods.name
+            || cache.rate !== play.mods.rate) {
+            cache.previousState = cache.currentState;
+            cache.currentState = state.name;
+
+            cache.rulesetName = settings.mode.name;
+            cache.isConvert = beatmap.isConvert;
+            cache.overallDiff = beatmap.stats.od.original;
+            cache.circleSize = beatmap.stats.cs.original;
+            cache.mods = play.mods.name;
+            cache.rate = play.mods.rate;
+
+            prepareUnstableRateDisplay(cache.unstableRateStyle);
+            hitErrorMeterManager.prepareHitErrorMeter(cache.client, cache.rulesetName, cache.isConvert, cache.overallDiff, cache.circleSize, cache.mods, cache.rate);
+            document.querySelector('.hitErrorMeterContainer').style.opacity = Number(shouldHitErrorMeterBeVisible());
+
+            // osu!taiko applies a vertical offset to the map background only in some maps
+            // (can't determine why (and how) yet, therefore disable the in-game score meter hider in osu!taiko for now).
+            // See https://github.com/ppy/osu/issues/14238#issuecomment-2167691307
+            document.querySelector('.inGameScoreMeterHider').style.opacity = Number(cache.currentState === 'play' && cache.hideInGameScoreMeter && cache.rulesetName !== 'taiko');
+
+            if (cache.scoreMeterSize !== settings.scoreMeter.size)
+                cache.scoreMeterSize = settings.scoreMeter.size;
+
+            if (cache.rulesetName === 'fruits' || settings.scoreMeter.type.name === 'colour') {
+                // It's actually 21.5px, hovewer let's use that to make sure the hider actually covers the entire thing.
+                document.querySelector('.inGameScoreMeterHider').style.height = `${Math.ceil(22 * cache.scoreMeterSize) / 16}rem`;
+                // 1 pixel for each side is added for a good measure in case the in-game hit error meter peeks on one side or the other.
+                document.querySelector('.inGameScoreMeterHider').style.width = `${Math.ceil((639 + 2) * cache.scoreMeterSize) / 16}rem`;
+
+            } else if (settings.scoreMeter.type.name === 'error') {
+                document.querySelector('.inGameScoreMeterHider').style.height = `${Math.ceil(27 * cache.scoreMeterSize) / 16}rem`;
+
+                // The additional 19px is for the 50's hit windows that don't actually do anything in osu!taiko in osu!(stable).
+                document.querySelector('.inGameScoreMeterHider').style.width = cache.rulesetName === 'taiko'
+                    ? `${Math.ceil(((hitErrorMeterManager.hitWindows.hit100 * 1.125 + 19) * 2 + 2) * cache.scoreMeterSize) / 16}rem`
+                    : `${Math.ceil((hitErrorMeterManager.hitWindows.hit50 * 1.125 * 2 + 2) * cache.scoreMeterSize) / 16}rem`;
+
+            } else {
+                document.querySelector('.inGameScoreMeterHider').style.width = '0';
+                document.querySelector('.inGameScoreMeterHider').style.height = '0';
+            };
+        };
+
+        if (cache.unstableRate !== play.unstableRate) {
+            cache.unstableRate = play.unstableRate;
+            unstableRateCountUp.update(cache.unstableRate);
+        }
+
+        if (cache.isFullscreen !== settings.resolution.fullscreen || cache.gameWindowedHeight !== settings.resolution.height || cache.gameFullscreenHeight !== settings.resolution.heightFullscreen) {
+            cache.isFullscreen = settings.resolution.fullscreen;
+            cache.gameWindowedHeight = settings.resolution.height;
+            cache.gameFullscreenHeight = settings.resolution.heightFullscreen;
+
+            // Here is a thing - osu!(lazer) already has way more flexibility when it comes to resizing (and moving, and scaling, and everything in between).
+            // It wouldn't make sense to scale this overlay in osu!lazer since not only you can have multiple hit error meters, you can scale them however you want.
+            // Therefore, limit this to osu!(stable) only.
+            if (cache.client === 'stable' && cache.scaleHitErrorMeterWithResolution)
+                document.querySelector('.main').style.transform = cache.isFullscreen
+                    ? `translate(-50%, -50%) scale(${cache.gameFullscreenHeight / 1080})`
+                    : `translate(-50%, -50%) scale(${cache.gameWindowedHeight / 1080})`;
+            else
+                document.querySelector('.main').style.transform = `translate(-50%, -50%) scale(1)`;
+        };
+
+        if (cache.foldersBeatmap !== folders.beatmap || cache.filesBackground !== files.background) {
+            cache.foldersBeatmap = folders.beatmap;
+            cache.filesBackground = files.background;
+            document.querySelector('#background').src = cache.filesBackground !== '' ? `${location.origin}/files/beatmap/${cache.foldersBeatmap}/${cache.filesBackground}` : '';
+        };
+
+        if (cache.backgroundDim !== settings.background.dim) {
+            cache.backgroundDim = settings.background.dim;
+            document.querySelector('#background').style.filter = `brightness(${1 - cache.backgroundDim / 100})`;
+        };
+    } catch (error) {
+        console.error(error);
+    };
+});
+
+socket.api_v2_precise(({ hitErrors }) => {
+    try {
+        if (cache.hitErrors.length !== hitErrors.length) {
+            cache.hitErrors = hitErrors;
+            let hitErrorsCurrentAmount = cache.hitErrors.length;
+
+            // 초기화 블록
+            if (hitErrorsCurrentAmount === 0 || !shouldHitErrorMeterBeVisible()) {
+                cache.relativeMovingAverageArrowPosition = 0;
+                const arrow = document.querySelector('.movingAverageArrow'); // arrow 변수 선언
+                arrow.style.left = '0%';
+                arrow.style.fill = 'rgb(153,221,255)'; // 색상 초기화
+                hitErrorMeterManager.removeAllHitErrorTicks();
+            }
+
+            if (hitErrorsCurrentAmount > 0 && cache.hitErrorsPreviousAmount === -1) {
+                cache.hitErrorsPreviousAmount = hitErrorsCurrentAmount - 50;
+            }
+
+            const centralRange = 8;
+            const sideLimit = 33.33;
+
+            const arrow = document.querySelector('.movingAverageArrow');
+            for (let i = cache.hitErrorsPreviousAmount; i < hitErrorsCurrentAmount; i++) {
+                if (cache.hitErrors[i] != undefined && !isNaN(cache.hitErrors[i]) && cache.hitErrors[i] != null
+                    && shouldHitErrorMeterBeVisible() && shouldLateHitErrorBeConsideredInMania(cache.hitErrors[i])) {
+                    
+                    hitErrorMeterManager.addTick(cache.hitErrors[i]);
+                    let relativePos;
+
+                    if (cache.rulesetName !== 'fruits') {
+                        relativePos = cache.relativeMovingAverageArrowPosition = cache.relativeMovingAverageArrowPosition * 0.9 + cache.hitErrors[i] * 0.1;
+                    } else {
+                        relativePos = cache.relativeMovingAverageArrowPosition = cache.relativeMovingAverageArrowPosition * 0.9 - cache.hitErrors[i] * 0.1;
+                    }
+
+                    arrow.style.left = `${hitErrorMeterManager.getRelativeHitErrorPosition(relativePos) * 100}%`;
+
+                    let r, g, b;
+                    if (relativePos <= -sideLimit) {
+                        r = 191; g = 64; b = 255;
+                    } else if (relativePos >= sideLimit) {
+                        r = 255; g = 64; b = 64;
+                    } else if (relativePos > -centralRange && relativePos < centralRange) {
+                        r = 153; g = 221; b = 255;
+                    } else if (relativePos > -sideLimit && relativePos <= -centralRange) {
+                        r = 191; g = 64; b = 255;
+                    } else if (relativePos >= centralRange && relativePos < sideLimit) {
+                        r = 255; g = 64; b = 64;
+                    }
+
+                    arrow.style.fill = `rgb(${r},${g},${b})`;
+                }
+            }
+
+            cache.hitErrorsPreviousAmount = hitErrorsCurrentAmount;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+});
