@@ -1,3 +1,8 @@
+<img width="446" height="134" alt="MerhafHitErrorMeter" src="https://github.com/user-attachments/assets/eef85ab4-4939-4d98-9f7b-ee1f2eee551f" />
+
+
+# =============================
+
 # HitErrorMeter by KapiWilq
 
 <a href="https://github.com/KapiWilq/HitErrorMeter/releases/latest/download/HitErrorMeter.by.KapiWilq.zip" target="_blank">
