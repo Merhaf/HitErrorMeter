@@ -212,7 +212,7 @@ socket.api_v2_precise(({ hitErrors }) => {
             // 초기화 블록
             if (hitErrorsCurrentAmount === 0 || !shouldHitErrorMeterBeVisible()) {
                 cache.relativeMovingAverageArrowPosition = 0;
-                const arrow = document.querySelector('.movingAverageArrow'); // arrow 변수 선언
+                const arrow = document.querySelector('.movingAverageArrow');
                 arrow.style.left = '0%';
                 arrow.style.fill = 'rgb(153,221,255)'; // 색상 초기화
                 hitErrorMeterManager.removeAllHitErrorTicks();
@@ -227,7 +227,9 @@ socket.api_v2_precise(({ hitErrors }) => {
 
             const arrow = document.querySelector('.movingAverageArrow');
             for (let i = cache.hitErrorsPreviousAmount; i < hitErrorsCurrentAmount; i++) {
+                // 조건문에 Math.abs(cache.hitErrors[i]) < 100 추가
                 if (cache.hitErrors[i] != undefined && !isNaN(cache.hitErrors[i]) && cache.hitErrors[i] != null
+                    && Math.abs(cache.hitErrors[i]) < 100
                     && shouldHitErrorMeterBeVisible() && shouldLateHitErrorBeConsideredInMania(cache.hitErrors[i])) {
                     
                     hitErrorMeterManager.addTick(cache.hitErrors[i]);
